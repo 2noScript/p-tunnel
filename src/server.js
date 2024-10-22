@@ -1,83 +1,59 @@
-
-
 import express from 'express'
 import http from 'http'
-import  { WebSocketServer } from 'ws'
+import { WebSocketServer } from 'ws'
 
-
-
-const app = express();
-const server = http.createServer(app);
-
-const wss = new WebSocketServer({ server });
-
-const tunnels = {};
-
-wss.on('connection', (ws) => {
-    ws.on('message', (message) => {
-        const msg = JSON.parse(message);
-        if (msg.type === 'register') {
-            tunnels[msg.tunnelId] = ws;
-            console.log(`New tunnel registered: ${msg.tunnelId}`);
-            // console.log(`all tunnel`,tunnels)
-        }
-
-        if (msg.type === 'proxy') {
-            if (tunnels[msg.tunnelId]) {
-                tunnels[msg.tunnelId].send(JSON.stringify({
-                    type: 'request',
-                    data: msg.data
-                }));
-            }
-        }
-    });
-
-    ws.on('close', () => {
-        for (let tunnelId in tunnels) {
-            if (tunnels[tunnelId] === ws) {
-                delete tunnels[tunnelId];
-                console.log(`Tunnel closed: ${tunnelId}`);
-            }
-        }
-    });
-});
-
-app.get('/', (req, res) => {
-    res.send('server is running!');
-});
-
-const PORT = 8080;
-server.listen(PORT, () => {
-    console.log(`Server is listening on port ${PORT}`);
-});
-
-
-export class TunnelServer{
+export class TunnelServer {
     #port
     #tunnels
     #app
     #wss
-    #server 
+    #server
+    constructor(port) {
+        this.#tunnels = {}
+        this.#app = express()
+        this.#server = http.createServer(this.#app)
+        this.#wss = new WebSocketServer({ server: this.#server })
+        this.#port = port
+        
+       this.#wss.on('connection', ws => {
+            ws.on('message', message => {
+                const msg = JSON.parse(message)
+                if (msg.type === 'register') {
+                    this.#tunnels[msg.tunnelId] = ws
+                }
+        
+                if (msg.type === 'proxy') {
+                    if (this.#tunnels[msg.tunnelId]) {
+                        this.#tunnels[msg.tunnelId].send(
+                            JSON.stringify({
+                                type: 'request',
+                                data: msg.data,
+                            })
+                        )
+                    }
+                }
+            })
 
-    constructor(port){
-        this.#tunnels={}
-        this.#app=express()
-        this.#server=http.createServer(this.#app)
-        this.#wss=new WebSocketServer({server:this.#server})
-        this.#port=port
+            ws.on('close', () => {
+                for (let tunnelId in this.#tunnels) {
+                    if (this.#tunnels[tunnelId] === ws) {
+                        delete this.#tunnels[tunnelId]
+                        console.log(`Tunnel closed: ${tunnelId}`)
+                    }
+                }
+            })
 
-        this.#app.get('/',(req,res)=>{
-            res.send('server is running!')
-        })
+        })  
     }
-
-
     
    
-    start(){
-       this.#server.listen(this.#port,()=>{
-          console.log("`Server is listening on port ${port}`")
-       })
+
+    start() {
+        this.#app.get('/', (req, res) => {
+            res.send('server is running!')
+        })
+        this.#server.listen(this.#port, () => {
+            console.log('`Server is listening on port ${port}`')
+        })
     }
 }
-
