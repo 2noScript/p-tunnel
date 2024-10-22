@@ -50,3 +50,34 @@ const PORT = 8080;
 server.listen(PORT, () => {
     console.log(`Server is listening on port ${PORT}`);
 });
+
+
+export class TunnelServer{
+    #port
+    #tunnels
+    #app
+    #wss
+    #server 
+
+    constructor(port){
+        this.#tunnels={}
+        this.#app=express()
+        this.#server=http.createServer(this.#app)
+        this.#wss=new WebSocketServer({server:this.#server})
+        this.#port=port
+
+        this.#app.get('/',(req,res)=>{
+            res.send('server is running!')
+        })
+    }
+
+
+    
+   
+    start(){
+       this.#server.listen(this.#port,()=>{
+          console.log("`Server is listening on port ${port}`")
+       })
+    }
+}
+

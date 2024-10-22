@@ -61,7 +61,7 @@ export class TunnelClient {
             console.error('server error:', error)
         })
     }
-
+    
     register(port) {
         if (this.#isConnect) {
             this.#ws.send(
