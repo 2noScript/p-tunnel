@@ -1,31 +1,43 @@
 import { WebSocket } from 'ws'
 import net from 'net'
-import { log } from 'console' 
-import {LOCAL_IP} from './constant.js'
-
+import { log } from 'console'
+import { LOCAL_IP } from './constant.js'
 
 export class TunnelClient {
     #ws
     #key
     #isConnect
+    #tunnelServerUrl
+    #tunnelsClient
     constructor(tunnelServerUrl, key) {
         this.#key = key
-        this.#ws = new WebSocket(tunnelServerUrl)
-        this.#ws.on('connecting', () => {
-            console.log('Attempting to connect...')
+        this.#tunnelServerUrl = tunnelServerUrl
+        this.#tunnelsClient = {}
+
+      
+    }
+
+    register( port) {
+        log(this.#tunnelServerUrl)
+        const ws = new WebSocket(this.#tunnelServerUrl)
+
+        ws.on('open', () => {
+            ws.send(
+                JSON.stringify({
+                    type: 'register',
+                    port 
+                })
+            )
         })
-        this.#ws.on('open', () => {
-            this.#isConnect = true
-        })
-        this.#ws.on('close', () => {
+
+        ws.on('close', () => {
             console.log('connection closed.')
-            this.#isConnect = false
         })
-        this.#ws.on('error', error => {
+        ws.on('error', error => {
             console.error('server error:', error)
         })
 
-        this.#ws.on('message', message => {
+        ws.on('message', message => {
             const msg = JSON.parse(message)
             // if (msg.type === 'request') {
             //     const localPort = 3000
@@ -45,18 +57,22 @@ export class TunnelClient {
             //     })
             // }
         })
-    }
 
-    register(port) {
-        if (this.#isConnect) {
-            this.#ws.send(
-                JSON.stringify({
-                    type: 'register',
-                    tunnelId: `${this.#key}:${port}`,
-                })
-            )
-            return
-        }
-        log("don't connect")
+        // if (this.#isConnect) {
+        //     this.#ws.send(
+        //         JSON.stringify({
+        //             type: 'register',
+        //             tunnelId: `${this.#key}:${port}`,
+        //         })
+        //     )
+        //     return
+        // }
+        // log("don't connect")
     }
 }
+
+const tunnelCl = new TunnelClient('http://127.0.0.1:8080', '2202200')
+
+tunnelCl.register(4000)
+
+tunnelCl.register(5000)

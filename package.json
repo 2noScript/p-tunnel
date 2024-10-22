@@ -7,7 +7,8 @@
     "scripts": {
         "dev:c": "node src/client.js",
         "dev:s": "nodemon src/server.js",
-        "dev:test": "node src/test"
+        "dev:test": "node src/test",
+        "dev":"nodemon src"
     },
     "dependencies": {
         "express": "^4.21.1",
