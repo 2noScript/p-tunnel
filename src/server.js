@@ -2,7 +2,7 @@
 
 import express from 'express'
 import http from 'http'
-import WebSocket ,{ WebSocketServer } from 'ws'
+import  { WebSocketServer } from 'ws'
 
 
 
@@ -14,14 +14,12 @@ const wss = new WebSocketServer({ server });
 const tunnels = {};
 
 wss.on('connection', (ws) => {
-   
-    
     ws.on('message', (message) => {
         const msg = JSON.parse(message);
-        
         if (msg.type === 'register') {
             tunnels[msg.tunnelId] = ws;
             console.log(`New tunnel registered: ${msg.tunnelId}`);
+            // console.log(`all tunnel`,tunnels)
         }
 
         if (msg.type === 'proxy') {
@@ -45,17 +43,7 @@ wss.on('connection', (ws) => {
 });
 
 app.get('/', (req, res) => {
-    wss.clients.forEach(client => {
-        if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({
-                type: 'request',
-                data: "xxx"
-            }));
-        }
-    });
-
-    // console.log(wss.clients)
-    res.send('Ngrok-like server is running!');
+    res.send('server is running!');
 });
 
 const PORT = 8080;
