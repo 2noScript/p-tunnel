@@ -1,7 +1,7 @@
 import express from 'express'
 import http from 'http'
 import { WebSocketServer } from 'ws'
-import {LOCAL_IP} from './constant.js'
+import { LOCAL_IP, MSG_TYPE ,WS_EVENT,WSS_EVENT} from './constant.js'
 import { log } from 'console'
 
 export class TunnelServer {
@@ -16,31 +16,31 @@ export class TunnelServer {
         this.#server = http.createServer(this.#app)
         this.#wss = new WebSocketServer({ server: this.#server })
         this.#port = port
-        
-      
-    }
-    
-    #proxy(){
-       
     }
 
+    #proxy() {}
 
-    #info(){
+    #info() {
         this.#app.get('/', (req, res) => {
             res.send('server is running!')
         })
-        
-    }
-    #events(){
-        this.#wss.on('connection', (ws,req) => {
-            const clientIP = req.socket.remoteAddress;
 
-            ws.on('message', message => {
+        this.#app.get('/info', (req, res) => {
+            res.json(this.#tunnels)
+        })
+    }
+    #events() {
+        this.#wss.on(WSS_EVENT.CONNECTION, (ws, req) => {
+            const clientIP = req.socket.remoteAddress
+
+            ws.on(WS_EVENT.MESSAGE, message => {
                 const msg = JSON.parse(message)
+
+                switch (msg.type) {
+                }
 
                 if (msg.type === 'register') {
                     this.#tunnels[`${clientIP}:${msg.port}`] = ws
-                    log(Object.keys(this.#tunnels))
                 }
 
                 if (msg.type === 'proxy') {
@@ -55,7 +55,7 @@ export class TunnelServer {
                 }
             })
 
-            ws.on('close', () => {
+            ws.on(WS_EVENT.CLOSE, () => {
                 for (let tunnelId in this.#tunnels) {
                     if (this.#tunnels[tunnelId] === ws) {
                         delete this.#tunnels[tunnelId]
@@ -63,8 +63,7 @@ export class TunnelServer {
                     }
                 }
             })
-
-        })  
+        })
     }
 
     start() {
