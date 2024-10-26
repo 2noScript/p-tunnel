@@ -1,44 +1,45 @@
 import { WebSocket } from 'ws'
 import net from 'net'
-import { log } from 'console'
-import { LOCAL_IP } from './constant.js'
+import { log,error } from 'console'
+import { LOCAL_IP, MSG_TYPE, WS_EVENT, WSS_EVENT } from './constant.js'
 
 export class TunnelClient {
-    #ws
-    #key
-    #isConnect
-    #tunnelServerUrl
-    #tunnelsClient
-    constructor(tunnelServerUrl, key) {
-        this.#key = key
-        this.#tunnelServerUrl = tunnelServerUrl
-        this.#tunnelsClient = {}
-
-      
+    #TUNNEL_SERVER_URL
+    constructor(tunnelServerUrl) {
+        this.#TUNNEL_SERVER_URL = tunnelServerUrl
     }
 
-    register( port) {
-        log(this.#tunnelServerUrl)
-        const ws = new WebSocket(this.#tunnelServerUrl)
-
+    register(port) {
+        const ws = new WebSocket(this.#TUNNEL_SERVER_URL)
         ws.on('open', () => {
             ws.send(
                 JSON.stringify({
                     type: 'register',
-                    port 
+                    data: {
+                        port,
+                    },
                 })
             )
+
+        })
+        ws.on('close', () => {
+            log('connection closed.')
         })
 
-        ws.on('close', () => {
-            console.log('connection closed.')
-        })
-        ws.on('error', error => {
-            console.error('server error:', error)
+        ws.on('error', err => {
+            error('server error:', err)
         })
 
         ws.on('message', message => {
             const msg = JSON.parse(message)
+
+            switch (msg.type) {
+                case MSG_TYPE.REGISTER:
+                    console.log(msg.data)
+                    break
+                default:
+                    break
+            }
             // if (msg.type === 'request') {
             //     const localPort = 3000
             //     const client = new net.Socket()
@@ -47,7 +48,7 @@ export class TunnelClient {
             //     })
             //     client.on('data', data => {
             //         ws.send(
-            //             JSON.stringify({
+            //             JSON.stringify({ 
             //                 type: 'response',
             //                 data: data.toString(),
             //                 tunnelId: tunnelId,
@@ -58,21 +59,28 @@ export class TunnelClient {
             // }
         })
 
-        // if (this.#isConnect) {
-        //     this.#ws.send(
-        //         JSON.stringify({
-        //             type: 'register',
-        //             tunnelId: `${this.#key}:${port}`,
-        //         })
-        //     )
-        //     return
-        // }
-        // log("don't connect")
+        return ws
+    }
+
+    close(ws){
+        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+            // ws.close();
+            console.log("WebSocket connection closed.");
+        } else {
+            console.log("WebSocket is not open or already closed.");
+        }
     }
 }
 
-const tunnelCl = new TunnelClient('http://127.0.0.1:8080', '2202200')
+const tunnelCl = new TunnelClient('http://127.0.0.1:8080')
 
-tunnelCl.register(4000)
 
-tunnelCl.register(5000)
+
+const w1=tunnelCl.register(4000)
+const w2=tunnelCl.register(5000)
+
+tunnelCl.close(w1)
+tunnelCl.close(w2)
+
+
+
